@@ -14,12 +14,16 @@ export class MarioGame {
         this.controls = new Controls();
 
         // Game state
-        this.gameState = 'PLAYING'; // 'TITLE' or 'PLAYING'
+        this.gameState = 'TITLE'; // 'TITLE' or 'PLAYING'
         this.score = 0;
         this.coins = 22;
         this.world = '1-1';
         this.timer = 400;
         this.lives = 3;
+
+        // Load Mario Title Screen
+        this.marioTitle = new Image();
+        this.marioTitle.src = '/mario_title.png';
 
         // Game constants
         this.GRAVITY = 1500;
@@ -32,15 +36,15 @@ export class MarioGame {
             walk: [new Image(), new Image(), new Image()],
             jump: new Image()
         };
-        this.marioSprites.idle.src = 'final_idle.png';
-        this.marioSprites.walk[0].src = 'final_walk1.png';
-        this.marioSprites.walk[1].src = 'final_walk2.png';
-        this.marioSprites.walk[2].src = 'final_walk3.png';
-        this.marioSprites.jump.src = 'final_jump.png';
+        this.marioSprites.idle.src = '/final_idle.png';
+        this.marioSprites.walk[0].src = '/final_walk1.png';
+        this.marioSprites.walk[1].src = '/final_walk2.png';
+        this.marioSprites.walk[2].src = '/final_walk3.png';
+        this.marioSprites.jump.src = '/final_jump.png';
 
         // Load Sprite Sheet for level elements
         this.spriteSheet = new Image();
-        this.spriteSheet.src = 'characters.png';
+        this.spriteSheet.src = '/characters.png';
 
         // Player state
         this.player = {
@@ -250,6 +254,13 @@ export class MarioGame {
     }
 
     draw() {
+        if (this.gameState === 'TITLE') {
+            this.ctx.fillStyle = '#5C94FC'; // Classic Mario Blue
+            this.ctx.fillRect(0, 0, this.width, this.height);
+            this.safeDrawImage(this.marioTitle, 0, 0, this.marioTitle.width, this.marioTitle.height, 0, 0, this.width, this.height);
+            return;
+        }
+
         // Calculate camera offset
         this.cameraX = Math.max(0, this.player.x - this.width / 2);
         // Constrain to level width
@@ -274,17 +285,28 @@ export class MarioGame {
         this.renderHUD();
     }
 
-    renderEnemies() {
-        if (!this.spriteSheet.complete) return;
+    safeDrawImage(img, sx, sy, sw, sh, dx, dy, dw, dh) {
+        if (!img || !img.complete || img.naturalWidth === 0) return false;
+        try {
+            if (arguments.length === 9) {
+                this.ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+            } else if (arguments.length === 5) {
+                this.ctx.drawImage(img, sx, sy, sw, sh);
+            } else if (arguments.length === 3) {
+                this.ctx.drawImage(img, sx, sy);
+            }
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
 
+    renderEnemies() {
         for (const enemy of this.enemies) {
             if (!enemy.alive) continue;
-            
-            // Goomba walk animation
             const walkFrame = Math.floor(Date.now() / 200) % 2;
             const sprite = this.sprites.enemies.goombaWalk[walkFrame];
-            
-            this.ctx.drawImage(
+            this.safeDrawImage(
                 this.spriteSheet,
                 sprite.x, sprite.y, sprite.w, sprite.h,
                 enemy.x, enemy.y, 16, 16
@@ -294,7 +316,7 @@ export class MarioGame {
 
     renderHUD() {
         this.ctx.fillStyle = 'white';
-        this.ctx.font = '8px "Press Start 2P", cursive'; // Fallback to sans-serif if not loaded
+        this.ctx.font = '8px "Press Start 2P", cursive';
         if (!this.ctx.font.includes('Press Start 2P')) {
             this.ctx.font = 'bold 8px Courier New';
         }
@@ -303,31 +325,21 @@ export class MarioGame {
         const y1 = 12;
         const y2 = 22;
 
-        // MARIO score
         this.ctx.fillText('MARIO', margin, y1);
         this.ctx.fillText(String(this.score).padStart(6, '0'), margin, y2);
-
-        // COINS
         this.ctx.fillText('COINS', margin + 50, y1);
         this.ctx.fillText('x' + String(this.coins).padStart(2, '0'), margin + 50, y2);
-
-        // WORLD
         this.ctx.fillText('WORLD', margin + 90, y1);
         this.ctx.fillText(this.world, margin + 95, y2);
-
-        // TIME
         this.ctx.fillText('TIME', margin + 125, y1);
         this.ctx.fillText(String(Math.floor(this.timer)).padStart(3, '0'), margin + 130, y2);
     }
 
     renderBackground() {
-        if (!this.spriteSheet.complete) return;
-
         for (const element of this.background) {
             const sprite = this.sprites.bg[element.type];
-            // Parallax effect: background moves slower
             const parallaxX = element.x - this.cameraX * 0.5;
-            this.ctx.drawImage(
+            this.safeDrawImage(
                 this.spriteSheet,
                 sprite.x, sprite.y, sprite.w, sprite.h,
                 parallaxX, element.y, sprite.w, sprite.h
@@ -336,21 +348,20 @@ export class MarioGame {
     }
 
     renderLevel() {
-        if (!this.spriteSheet.complete) {
-            for (const block of this.blocks) {
-                this.ctx.fillStyle = block.type === 'ground' ? '#8B4513' : '#CD853F';
-                this.ctx.fillRect(block.x, block.y, block.width, block.height);
-            }
-            return;
-        }
-
+        const hasSpriteSheet = this.spriteSheet.complete && this.spriteSheet.naturalWidth > 0;
+        
         for (const block of this.blocks) {
             const sprite = this.sprites.tiles[block.type === 'ground' ? 'ground' : (block.type === 'question' ? 'question' : 'brick')];
             
-            // Tile pattern for long blocks
+            if (!hasSpriteSheet) {
+                this.ctx.fillStyle = block.type === 'ground' ? '#8B4513' : '#CD853F';
+                this.ctx.fillRect(block.x, block.y, block.width, block.height);
+                continue;
+            }
+
             for (let x = 0; x < block.width; x += 16) {
                 for (let y = 0; y < block.height; y += 16) {
-                    this.ctx.drawImage(
+                    this.safeDrawImage(
                         this.spriteSheet,
                         sprite.x, sprite.y, sprite.w, sprite.h,
                         block.x + x, block.y + y, 16, 16
@@ -370,7 +381,7 @@ export class MarioGame {
             currentSprite = this.marioSprites.walk[this.player.walkFrame];
         }
 
-        if (!currentSprite || !currentSprite.complete) {
+        if (!currentSprite || !currentSprite.complete || currentSprite.naturalWidth === 0) {
             this.ctx.fillStyle = 'red';
             this.ctx.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
             return;
@@ -380,9 +391,9 @@ export class MarioGame {
         if (!this.player.facingRight) {
             this.ctx.translate(this.player.x + this.player.width, this.player.y);
             this.ctx.scale(-1, 1);
-            this.ctx.drawImage(currentSprite, 0, 0, currentSprite.width, currentSprite.height, 0, 0, this.player.width, this.player.height);
+            this.safeDrawImage(currentSprite, 0, 0, currentSprite.width, currentSprite.height, 0, 0, this.player.width, this.player.height);
         } else {
-            this.ctx.drawImage(currentSprite, 0, 0, currentSprite.width, currentSprite.height, this.player.x, this.player.y, this.player.width, this.player.height);
+            this.safeDrawImage(currentSprite, 0, 0, currentSprite.width, currentSprite.height, this.player.x, this.player.y, this.player.width, this.player.height);
         }
         this.ctx.restore();
     }

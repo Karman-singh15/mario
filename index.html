@@ -10,8 +10,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-color: #0d0d0d;
-      --border-color: rgba(255, 255, 255, 0.8);
+      --bg-color: #000000;
+      --accent-color: #ffffff;
+      --button-bg: #1a1a1a;
+      --button-hover: #2a2a2a;
     }
 
     body {
@@ -21,13 +23,17 @@
       font-family: 'Inter', system-ui;
       height: 100vh;
       color: white;
+      display: flex;
+      flex-direction: column;
     }
 
     #app-container {
-      position: relative;
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100vw;
       height: 100vh;
-      overflow: hidden;
+      z-index: 1;
     }
 
     canvas {
@@ -35,12 +41,136 @@
       width: 100% !important;
       height: 100% !important;
     }
+
+    .ui-layer {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 2rem;
+      box-sizing: border-box;
+    }
+
+    .header {
+      display: flex;
+      justify-content: flex-end;
+      pointer-events: auto;
+    }
+
+    .btn-signin {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      transition: background 0.2s;
+    }
+
+    .btn-signin:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-signin svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      margin-bottom: 8vh; /* Slightly more space at bottom */
+      padding-left: 15rem; /* Shift a bit on the right */
+      pointer-events: auto;
+    }
+
+    .play-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .btn-play {
+      background: var(--button-bg);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 0.8rem 2rem;
+      font-size: 1.1rem;
+      border-radius: 12px; /* A little more rounded */
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+
+    .btn-play:hover {
+      background: var(--button-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .arrow-container {
+      position: absolute;
+      top: -30px;
+      right: 100%;
+      margin-right: 5px;
+      width: 80px;
+      height: 60px;
+    }
+
+    .arrow-svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .arrow-path {
+      fill: none;
+      stroke: white;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
   </style>
 </head>
 
 <body>
   <div id="app-container">
     <canvas id="three-canvas"></canvas>
+  </div>
+
+  <div class="ui-layer">
+    <header class="header">
+      <button class="btn-signin" id="signin-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        sign in
+      </button>
+    </header>
+
+    <footer class="footer">
+      <div class="play-container">
+        <div class="arrow-container">
+          <svg class="arrow-svg" viewBox="0 0 100 80">
+            <path class="arrow-path" d="M10,10 Q10,60 80,65" />
+            <path class="arrow-path" d="M65,55 L80,65 L65,75" />
+          </svg>
+        </div>
+        <button class="btn-play" id="play-btn">Play for free</button>
+      </div>
+    </footer>
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>

@@ -1,4 +1,3 @@
-
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -7,50 +6,36 @@ import { MarioGame } from './mario.js';
 // Setup basic scene
 const canvas = document.querySelector('#three-canvas');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0d0d0d); // Dark background common in premium mockups
+scene.background = new THREE.Color(0x000000);
 
 // Camera
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 5, 50); // Zoomed out and slightly raised for a better default view
-camera.lookAt(0, 0, 0);
+camera.position.set(0, 5, 60); // Zoomed out for safety
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
-  antialias: true,
-  alpha: true
+  antialias: true
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
 
 // Controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.dampingFactor = 0.05;
-controls.enablePan = false;
-controls.minDistance = 15;
-controls.maxDistance = 50;
-controls.autoRotate = false; // Let user move it manually like in mockup
+controls.target.set(0, 0, 0);
 
 // Lighting
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
 scene.add(ambientLight);
 
-// Key light
 const mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
 mainLight.position.set(10, 10, 10);
 scene.add(mainLight);
 
-// Rim light (makes the edges pop)
-const rimLight = new THREE.PointLight(0xffffff, 1.5);
+const rimLight = new THREE.PointLight(0xffffff, 1.0);
 rimLight.position.set(-15, 10, -15);
 scene.add(rimLight);
-
-// Fill light
-const fillLight = new THREE.PointLight(0xffffff, 0.5);
-fillLight.position.set(5, -10, 5);
-scene.add(fillLight);
 
 // Mario Game Setup
 const marioGame = new MarioGame(160, 144);
@@ -67,71 +52,109 @@ gltfLoader.load('gameboy.glb', (gltf) => {
   gameboy = gltf.scene;
   scene.add(gameboy);
 
-  // Material refinement
+  // Material refinement - Final Aesthetics
   gameboy.traverse((child) => {
     if (child.isMesh) {
-      if (child.material) {
-        child.material = child.material.clone();
-        // A slightly cooler, "premium" grey
-        child.material.color.set(0xaaaaaa);
-        child.material.roughness = 0.3;
-        child.material.metalness = 0.2;
-      }
-      
       const name = child.name.toLowerCase();
-      if (name.includes('screen') || name.includes('display') || name.includes('plane')) {
+      
+      if (name.includes('screen') || name.includes('display') || name.includes('lcd')) {
         child.material = new THREE.MeshBasicMaterial({ 
           map: screenTexture,
+          color: 0xffffff,
           side: THREE.DoubleSide
         });
+      } else if (child.material) {
+        child.material = child.material.clone();
+        child.material.color.set(0xaaaaaa); // Consistent premium grey
+        child.material.roughness = 0.4;
+        child.material.metalness = 0.1;
+        
+        // Enhance realism with semi-transparent glass if present
+        if (name.includes('glass') || name.includes('plastic') || name.includes('cover')) {
+            child.material.transparent = true;
+            child.material.opacity = 0.4;
+        }
       }
     }
   });
 
-  // Scale and center precisely
-  gameboy.scale.set(1.0, 1.0, 1.0); // Reset scale for better default zoom
+  // Zoome-out scaling
+  gameboy.scale.set(1.0, 1.0, 1.0);
   
   const box = new THREE.Box3().setFromObject(gameboy);
   const center = box.getCenter(new THREE.Vector3());
-  gameboy.position.sub(center); // Fully center it at 0,0,0
+  gameboy.position.sub(center);
+  
+  gameboy.userData.initialY = gameboy.position.y;
 });
 
 // Handle Window Resize
 window.addEventListener('resize', () => {
-  const container = document.querySelector('#app-container');
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-  
-  camera.aspect = width / height;
+  camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(width, height);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// UI Logic
+let signedIn = false;
+const signinBtn = document.querySelector('#signin-btn');
+const playBtn = document.querySelector('#play-btn');
+
+signinBtn.addEventListener('click', () => {
+    signedIn = !signedIn;
+    signinBtn.innerHTML = signedIn ? `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        Karman Singh
+    ` : `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        sign in
+    `;
+});
+
+playBtn.addEventListener('click', () => {
+    if (!signedIn) {
+        alert('Please sign in to play for free!');
+    } else if (marioGame) {
+        marioGame.gameState = 'PLAYING';
+        playBtn.style.display = 'none'; // Hide play button after starting
+        document.querySelector('.arrow-container').style.display = 'none'; // Hide arrow
+    }
 });
 
 // Animation Loop
-let lastTime = 0;
+let lastTime = performance.now();
 
 function animate(timestamp) {
-  const dt = (timestamp - lastTime) / 1000;
+  if (!timestamp) timestamp = performance.now();
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
   lastTime = timestamp;
 
   controls.update();
 
   if (marioGame) {
-    marioGame.update(dt);
-    marioGame.draw();
+    try {
+      marioGame.update(dt);
+      marioGame.draw();
+    } catch (e) {
+      console.warn('Mario Game Error:', e);
+    }
     screenTexture.needsUpdate = true;
   }
 
-  if (gameboy) {
-    // Smoother "floating" effect, but keep it straight as requested
-    gameboy.position.y = Math.sin(timestamp * 0.001) * 0.4;
-    gameboy.rotation.set(0, 0, 0); // Keep it straight
+  if (gameboy && typeof gameboy.userData.initialY === 'number') {
+    gameboy.position.y = gameboy.userData.initialY + Math.sin(timestamp * 0.001) * 0.5;
   }
 
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
 
-// Initial trigger for renderer size
-window.dispatchEvent(new Event('resize'));
 requestAnimationFrame(animate);
+camera.position.set(0, 5, 50); // Restored zoomed-out view
+camera.lookAt(0, 0, 0);
