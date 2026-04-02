@@ -74,9 +74,6 @@ function animate(timestamp) {
   // Update Button Animations
   updateButtons(marioGame.controls.keys);
 
-  // Float Animation (gentle)
-  // Keep the tilt but add bobbing
-  // We apply bobbing to position, not rotation, to preserve user's tilt
   gameboy.position.y = Math.sin(timestamp * 0.0015) * 0.5;
   // Slowly rotate Y a bit if desired, or keep fixed
   // gameboy.rotation.y = -Math.PI / 8 + Math.sin(timestamp * 0.0005) * 0.05;
