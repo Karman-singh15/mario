@@ -85,12 +85,10 @@
     }
 
     .footer {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      position: relative;
-      margin-bottom: 8vh; /* Slightly more space at bottom */
-      padding-left: 15rem; /* Shift a bit on the right */
+      position: absolute;
+      left: calc(50% + 16rem);
+      top: 58%;
+      transform: translateY(-50%);
       pointer-events: auto;
     }
 
@@ -122,10 +120,10 @@
 
     .arrow-container {
       position: absolute;
-      top: -30px;
+      top: -10px;
       right: 100%;
-      margin-right: 5px;
-      width: 80px;
+      margin-right: 1rem;
+      width: 16rem;
       height: 60px;
     }
 
@@ -163,9 +161,9 @@
     <footer class="footer">
       <div class="play-container">
         <div class="arrow-container">
-          <svg class="arrow-svg" viewBox="0 0 100 80">
-            <path class="arrow-path" d="M10,10 Q10,60 80,65" />
-            <path class="arrow-path" d="M65,55 L80,65 L65,75" />
+          <svg class="arrow-svg" viewBox="0 0 256 60">
+            <path class="arrow-path" d="M10,10 Q120,50 240,40" />
+            <path class="arrow-path" d="M220,30 L240,40 L225,55" />
           </svg>
         </div>
         <button class="btn-play" id="play-btn">Play for free</button>
